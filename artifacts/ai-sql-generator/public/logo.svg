@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 64" fill="none">
+  <rect width="220" height="64" rx="10" fill="none"/>
+  <!-- Hexagon background -->
+  <polygon points="32,8 52,19 52,41 32,52 12,41 12,19" fill="hsl(222,47%,14%)" stroke="hsl(188,86%,53%)" stroke-width="2"/>
+  <!-- DB icon lines -->
+  <ellipse cx="32" cy="24" rx="11" ry="5" fill="hsl(188,86%,53%)" opacity="0.9"/>
+  <rect x="21" y="24" width="22" height="14" fill="hsl(222,47%,18%)"/>
+  <ellipse cx="32" cy="38" rx="11" ry="5" fill="hsl(188,86%,43%)" opacity="0.8"/>
+  <ellipse cx="32" cy="24" rx="11" ry="5" fill="hsl(188,86%,53%)"/>
+  <line x1="21" y1="30" x2="43" y2="30" stroke="hsl(188,86%,65%)" stroke-opacity="0.3" stroke-width="1"/>
+  <!-- Text -->
+  <text x="68" y="27" font-family="Inter,ui-sans-serif,system-ui,sans-serif" font-size="15" font-weight="700" fill="hsl(210,40%,98%)" letter-spacing="-0.3">DataCraft</text>
+  <text x="68" y="46" font-family="Inter,ui-sans-serif,system-ui,sans-serif" font-size="15" font-weight="500" fill="hsl(188,86%,53%)" letter-spacing="0.5">AI</text>
+</svg>

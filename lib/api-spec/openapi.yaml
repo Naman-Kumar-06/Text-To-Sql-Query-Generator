@@ -1,0 +1,913 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: AI SQL Generator & Data Analytics Platform API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: datasets
+    description: Dataset upload and management
+  - name: connections
+    description: Database connections
+  - name: query
+    description: SQL generation, validation, execution
+  - name: history
+    description: Query history
+  - name: conversations
+    description: Conversation memory
+  - name: insights
+    description: AI business insights
+  - name: export
+    description: Export query results
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /datasets:
+    get:
+      operationId: listDatasets
+      tags: [datasets]
+      summary: List all uploaded datasets
+      responses:
+        "200":
+          description: List of datasets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Dataset"
+    post:
+      operationId: uploadDataset
+      tags: [datasets]
+      summary: Upload a CSV or XLSX dataset (multipart/form-data, handled by client directly)
+      responses:
+        "201":
+          description: Dataset uploaded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dataset"
+        "400":
+          description: Invalid file
+
+  /datasets/{datasetId}:
+    get:
+      operationId: getDataset
+      tags: [datasets]
+      summary: Get dataset details
+      parameters:
+        - name: datasetId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Dataset details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dataset"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteDataset
+      tags: [datasets]
+      summary: Delete a dataset
+      parameters:
+        - name: datasetId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
+  /datasets/{datasetId}/rows:
+    get:
+      operationId: getDatasetRows
+      tags: [datasets]
+      summary: Preview first 100 rows of a dataset
+      parameters:
+        - name: datasetId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Preview rows and columns
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DatasetPreview"
+
+  /datasets/{datasetId}/columns:
+    get:
+      operationId: getDatasetColumns
+      tags: [datasets]
+      summary: Get column schema for a dataset
+      parameters:
+        - name: datasetId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Column schema
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ColumnInfo"
+
+  /connections:
+    get:
+      operationId: listConnections
+      tags: [connections]
+      summary: List database connections
+      responses:
+        "200":
+          description: List of connections
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DbConnection"
+    post:
+      operationId: createConnection
+      tags: [connections]
+      summary: Add a database connection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DbConnectionInput"
+      responses:
+        "201":
+          description: Connection created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DbConnection"
+
+  /connections/{connectionId}:
+    delete:
+      operationId: deleteConnection
+      tags: [connections]
+      summary: Delete a database connection
+      parameters:
+        - name: connectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
+  /connections/{connectionId}/test:
+    post:
+      operationId: testConnection
+      tags: [connections]
+      summary: Test a database connection
+      parameters:
+        - name: connectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Test result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectionTestResult"
+
+  /query/generate:
+    post:
+      operationId: generateQuery
+      tags: [query]
+      summary: Generate SQL from a natural language question
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QueryGenerateInput"
+      responses:
+        "200":
+          description: Generated SQL with explanation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueryGenerateResult"
+
+  /query/execute:
+    post:
+      operationId: executeQuery
+      tags: [query]
+      summary: Execute a SQL query
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QueryExecuteInput"
+      responses:
+        "200":
+          description: Query results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueryExecuteResult"
+
+  /query/validate:
+    post:
+      operationId: validateQuery
+      tags: [query]
+      summary: Validate SQL syntax and warn on dangerous statements
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QueryValidateInput"
+      responses:
+        "200":
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueryValidateResult"
+
+  /query/explain:
+    post:
+      operationId: explainQuery
+      tags: [query]
+      summary: Explain a SQL query in plain English
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QueryExplainInput"
+      responses:
+        "200":
+          description: Explanation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueryExplainResult"
+
+  /history:
+    get:
+      operationId: listHistory
+      tags: [history]
+      summary: Get query history
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: conversationId
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: History list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HistoryEntry"
+
+  /history/{historyId}:
+    get:
+      operationId: getHistoryEntry
+      tags: [history]
+      summary: Get a specific history entry
+      parameters:
+        - name: historyId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: History entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HistoryEntry"
+    delete:
+      operationId: deleteHistoryEntry
+      tags: [history]
+      summary: Delete a history entry
+      parameters:
+        - name: historyId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
+  /conversations:
+    get:
+      operationId: listConversations
+      tags: [conversations]
+      summary: List all conversations
+      responses:
+        "200":
+          description: Conversations list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Conversation"
+    post:
+      operationId: createConversation
+      tags: [conversations]
+      summary: Start a new conversation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConversationInput"
+      responses:
+        "201":
+          description: Conversation created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+
+  /conversations/{conversationId}:
+    delete:
+      operationId: deleteConversation
+      tags: [conversations]
+      summary: Delete a conversation
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
+  /insights:
+    post:
+      operationId: generateInsights
+      tags: [insights]
+      summary: Generate AI business insights from query results
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InsightsInput"
+      responses:
+        "200":
+          description: Business insights
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InsightsResult"
+
+  /export/csv:
+    post:
+      operationId: exportCsv
+      tags: [export]
+      summary: Export query results as CSV
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExportInput"
+      responses:
+        "200":
+          description: CSV download info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExportResult"
+
+  /export/excel:
+    post:
+      operationId: exportExcel
+      tags: [export]
+      summary: Export query results as Excel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExportInput"
+      responses:
+        "200":
+          description: Excel download info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExportResult"
+
+  /export/sql:
+    post:
+      operationId: exportSql
+      tags: [export]
+      summary: Export as SQL file
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SqlExportInput"
+      responses:
+        "200":
+          description: SQL download info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExportResult"
+
+  /stats:
+    get:
+      operationId: getStats
+      tags: [health]
+      summary: Get platform usage statistics
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformStats"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+
+    Dataset:
+      type: object
+      required: [id, name, fileName, fileType, rowCount, columnCount, createdAt, tableName]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        fileName:
+          type: string
+        fileType:
+          type: string
+          enum: [csv, xlsx]
+        rowCount:
+          type: integer
+        columnCount:
+          type: integer
+        sizeBytes:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+        tableName:
+          type: string
+        columns:
+          type: array
+          items:
+            $ref: "#/components/schemas/ColumnInfo"
+
+    DatasetPreview:
+      type: object
+      required: [columns, rows, totalRows]
+      properties:
+        columns:
+          type: array
+          items:
+            $ref: "#/components/schemas/ColumnInfo"
+        rows:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        totalRows:
+          type: integer
+
+    ColumnInfo:
+      type: object
+      required: [name, type]
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        nullable:
+          type: boolean
+        sampleValues:
+          type: array
+          items: {}
+
+    DbConnection:
+      type: object
+      required: [id, name, dbType, createdAt, isActive]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        dbType:
+          type: string
+          enum: [duckdb, mysql, postgresql]
+        host:
+          type: ["string", "null"]
+        port:
+          type: ["integer", "null"]
+        database:
+          type: ["string", "null"]
+        username:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        isActive:
+          type: boolean
+
+    DbConnectionInput:
+      type: object
+      required: [name, dbType]
+      properties:
+        name:
+          type: string
+        dbType:
+          type: string
+          enum: [duckdb, mysql, postgresql]
+        host:
+          type: ["string", "null"]
+        port:
+          type: ["integer", "null"]
+        database:
+          type: ["string", "null"]
+        username:
+          type: ["string", "null"]
+        password:
+          type: ["string", "null"]
+        connectionString:
+          type: ["string", "null"]
+
+    ConnectionTestResult:
+      type: object
+      required: [success, message]
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+
+    QueryGenerateInput:
+      type: object
+      required: [question]
+      properties:
+        question:
+          type: string
+        datasetId:
+          type: ["string", "null"]
+        connectionId:
+          type: ["string", "null"]
+        conversationId:
+          type: ["string", "null"]
+        schema:
+          type: ["string", "null"]
+
+    QueryGenerateResult:
+      type: object
+      required: [sql, explanation, provider, conversationId]
+      properties:
+        sql:
+          type: string
+        explanation:
+          type: string
+        provider:
+          type: string
+        confidence:
+          type: ["number", "null"]
+        conversationId:
+          type: string
+        historyId:
+          type: string
+        warnings:
+          type: array
+          items:
+            type: string
+
+    QueryExecuteInput:
+      type: object
+      required: [sql]
+      properties:
+        sql:
+          type: string
+        datasetId:
+          type: ["string", "null"]
+        connectionId:
+          type: ["string", "null"]
+        historyId:
+          type: ["string", "null"]
+
+    QueryExecuteResult:
+      type: object
+      required: [columns, rows, rowCount, executionTimeMs]
+      properties:
+        columns:
+          type: array
+          items:
+            type: string
+        rows:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        rowCount:
+          type: integer
+        executionTimeMs:
+          type: number
+        chartType:
+          type: ["string", "null"]
+        chartConfig:
+          type: ["object", "null"]
+          additionalProperties: true
+
+    QueryValidateInput:
+      type: object
+      required: [sql]
+      properties:
+        sql:
+          type: string
+        datasetId:
+          type: ["string", "null"]
+
+    QueryValidateResult:
+      type: object
+      required: [isValid, warnings, errors]
+      properties:
+        isValid:
+          type: boolean
+        isDangerous:
+          type: boolean
+        warnings:
+          type: array
+          items:
+            type: string
+        errors:
+          type: array
+          items:
+            type: string
+        dangerousStatements:
+          type: array
+          items:
+            type: string
+
+    QueryExplainInput:
+      type: object
+      required: [sql]
+      properties:
+        sql:
+          type: string
+
+    QueryExplainResult:
+      type: object
+      required: [explanation]
+      properties:
+        explanation:
+          type: string
+        breakdown:
+          $ref: "#/components/schemas/SqlBreakdown"
+
+    SqlBreakdown:
+      type: object
+      properties:
+        tables:
+          type: array
+          items:
+            type: string
+        columns:
+          type: array
+          items:
+            type: string
+        filters:
+          type: array
+          items:
+            type: string
+        joins:
+          type: array
+          items:
+            type: string
+        groupBy:
+          type: array
+          items:
+            type: string
+        orderBy:
+          type: array
+          items:
+            type: string
+
+    HistoryEntry:
+      type: object
+      required: [id, question, sql, createdAt]
+      properties:
+        id:
+          type: string
+        question:
+          type: string
+        sql:
+          type: string
+        explanation:
+          type: ["string", "null"]
+        datasetId:
+          type: ["string", "null"]
+        datasetName:
+          type: ["string", "null"]
+        connectionId:
+          type: ["string", "null"]
+        conversationId:
+          type: ["string", "null"]
+        rowCount:
+          type: ["integer", "null"]
+        executionTimeMs:
+          type: ["number", "null"]
+        provider:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    Conversation:
+      type: object
+      required: [id, title, createdAt, messageCount]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        messageCount:
+          type: integer
+        datasetId:
+          type: ["string", "null"]
+
+    ConversationInput:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+        datasetId:
+          type: ["string", "null"]
+
+    InsightsInput:
+      type: object
+      required: [question, sql, rows, columns]
+      properties:
+        question:
+          type: string
+        sql:
+          type: string
+        rows:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        columns:
+          type: array
+          items:
+            type: string
+        datasetName:
+          type: ["string", "null"]
+
+    InsightsResult:
+      type: object
+      required: [summary, insights]
+      properties:
+        summary:
+          type: string
+        insights:
+          type: array
+          items:
+            $ref: "#/components/schemas/Insight"
+        recommendations:
+          type: array
+          items:
+            type: string
+
+    Insight:
+      type: object
+      required: [type, title, description]
+      properties:
+        type:
+          type: string
+          enum: [trend, outlier, highest, lowest, summary, anomaly]
+        title:
+          type: string
+        description:
+          type: string
+        value:
+          type: ["string", "null"]
+
+    ExportInput:
+      type: object
+      required: [rows, columns]
+      properties:
+        rows:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        columns:
+          type: array
+          items:
+            type: string
+        fileName:
+          type: ["string", "null"]
+
+    SqlExportInput:
+      type: object
+      required: [sql]
+      properties:
+        sql:
+          type: string
+        fileName:
+          type: ["string", "null"]
+
+    ExportResult:
+      type: object
+      required: [downloadUrl, fileName]
+      properties:
+        downloadUrl:
+          type: string
+        fileName:
+          type: string
+        sizeBytes:
+          type: ["integer", "null"]
+
+    PlatformStats:
+      type: object
+      required: [totalDatasets, totalQueries, totalConnections, totalConversations]
+      properties:
+        totalDatasets:
+          type: integer
+        totalQueries:
+          type: integer
+        totalConnections:
+          type: integer
+        totalConversations:
+          type: integer
+        recentQueriesCount:
+          type: integer
+        topDatasets:
+          type: array
+          items:
+            $ref: "#/components/schemas/DatasetStat"
+
+    DatasetStat:
+      type: object
+      required: [name, queryCount]
+      properties:
+        name:
+          type: string
+        queryCount:
+          type: integer
